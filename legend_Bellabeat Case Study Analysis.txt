@@ -1,0 +1,188 @@
+# Bellabeat Case Study Analysis
+# Author: [Your Name]
+# Date: 2024-06-28
+
+# This script performs a full analysis of the FitBit Fitness Tracker Data
+# as part of the Google Data Analytics Professional Certificate.
+
+# --- 1. SETUP: INSTALL AND LOAD PACKAGES ---
+# First, we need to make sure we have the right tools (packages) for the job.
+# The 'tidyverse' is a collection of R packages for data science (including ggplot2 for plots).
+# 'lubridate' makes working with dates and times easier.
+# 'janitor' helps with cleaning data.
+
+# Install packages if you don't have them yet (remove the '#' to run)
+# install.packages("tidyverse")
+# install.packages("lubridate")
+# install.packages("janitor")
+# install.packages("skimr")
+
+# Load the packages into our R session
+library(tidyverse)
+library(lubridate)
+library(janitor)
+library(skimr) # For getting a quick summary of the data
+
+# --- 2. PREPARE: IMPORT DATA ---
+# **FIX FOR FILE NOT FOUND ERROR:**
+# Instead of hardcoding the filename, we'll use file.choose(). This opens a window
+# for you to select the file, so R always knows where to find it.
+# Run each line and choose the correct file when the dialog box pops up.
+
+cat("Please select the 'dailyActivity_merged.csv' file.\n")
+daily_activity <- read_csv(file.choose())
+
+cat("Please select the 'minuteSleep_merged.csv' file.\n")
+sleep_day <- read_csv(file.choose())
+
+cat("Please select the 'hourlySteps_merged.csv' file.\n")
+hourly_steps <- read_csv(file.choose())
+
+
+# --- 3. PROCESS: CLEAN AND FORMAT DATA ---
+# Raw data is often messy. This step is crucial for accurate analysis.
+
+# Let's get a quick look at our dataframes to spot any initial issues.
+glimpse(daily_activity)
+glimpse(sleep_day)
+glimpse(hourly_steps)
+
+# Check for number of unique participants in each dataset
+n_distinct(daily_activity$Id)
+n_distinct(sleep_day$Id)
+n_distinct(hourly_steps$Id)
+# Note: Sleep data only has 24 participants, not 33. This is a limitation to note.
+
+# Clean column names to make them easier to work with (e.g., no spaces, all lowercase)
+daily_activity <- clean_names(daily_activity)
+sleep_day <- clean_names(sleep_day)
+hourly_steps <- clean_names(hourly_steps)
+
+# Format dates and times correctly
+# daily_activity: 'activity_date' is a character type, so we convert it to Date.
+daily_activity$activity_date <- mdy(daily_activity$activity_date)
+
+# sleep_day: 'date' is a character string with time info we need to separate.
+sleep_day$date <- as.Date(sleep_day$date, format="%m/%d/%Y %I:%M:%S %p")
+
+# hourly_steps: 'activity_hour' is also a character string.
+hourly_steps$activity_hour <- mdy_hms(hourly_steps$activity_hour)
+
+# Check for and remove any duplicates
+sum(duplicated(daily_activity))
+sum(duplicated(sleep_day))
+sum(duplicated(hourly_steps))
+
+# Remove duplicates if any were found
+daily_activity <- daily_activity %>% distinct()
+sleep_day <- sleep_day %>% distinct()
+hourly_steps <- hourly_steps %>% distinct()
+
+# Merge daily_activity and sleep_day into one master dataframe
+# We'll use a left_join to keep all activity data and add sleep data where available.
+# Note: The sleep data in `minuteSleep_merged.csv` is one row per minute, so we need to summarize it first.
+daily_sleep <- sleep_day %>%
+  group_by(id, date) %>%
+  summarise(total_minutes_asleep = sum(value == 1), # value=1 means asleep
+            total_time_in_bed = n()) %>%
+  rename(activity_date = date) # rename 'date' to match the activity table for merging
+
+# Now merge the summarized sleep data with the daily activity data
+merged_data <- merge(daily_activity, daily_sleep, by=c("id", "activity_date"), all.x = TRUE)
+
+# Let's add a "DayOfWeek" column for trend analysis
+merged_data$day_of_week <- wday(merged_data$activity_date, label=TRUE)
+
+# --- 4. ANALYZE: EXPLORE AND FIND INSIGHTS ---
+
+# Get a high-level statistical summary of our main dataset
+skim(merged_data)
+
+# Analyze user habits
+# How many days do people use their tracker?
+usage_summary <- merged_data %>%
+  group_by(id) %>%
+  summarise(days_tracked = n_distinct(activity_date)) %>%
+  ungroup()
+
+mean(usage_summary$days_tracked) # Average user tracked for ~30 days. Good!
+
+# What's the relationship between steps and calories burned?
+ggplot(data=merged_data, aes(x=total_steps, y=calories)) +
+  geom_point(color="#0072B2") +
+  geom_smooth(method="lm", color="red") +
+  labs(title="Total Steps vs. Calories Burned",
+       x="Total Steps per Day",
+       y="Calories Burned")
+# As expected, a strong positive correlation.
+
+# --- 5. SHARE: CREATE VISUALIZATIONS FOR THE PORTFOLIO ---
+# Now we create the specific charts for our GitHub README.
+
+# Finding 1: Users are most active in the early evening
+# First, separate the hour from the datetime in the hourly_steps data
+hourly_activity <- hourly_steps %>%
+  mutate(hour = hour(activity_hour))
+
+# Group by hour and calculate average steps
+hourly_summary <- hourly_activity %>%
+  group_by(hour) %>%
+  summarise(average_steps = mean(step_total))
+
+# Create the plot with a legend
+plot_activity_by_hour <- ggplot(data=hourly_summary, aes(x=hour, y=average_steps)) +
+  geom_col(aes(fill="Average Steps"), show.legend = TRUE) + # Map fill to a string for the legend
+  scale_fill_manual(name = "Activity", values = c("Average Steps" = "#0072B2")) + # Control legend title and color
+  labs(title="Average Steps by Hour of the Day",
+       subtitle="Activity peaks in the early evening (5-7 PM)",
+       x="Hour of the Day (24-hour format)",
+       y="Average Steps") +
+  theme_minimal()
+
+# Show the plot
+plot_activity_by_hour
+
+# Finding 2: A strong link between steps and sleep
+# We need to remove rows where sleep data is missing for a clean plot
+plot_data_sleep_vs_steps <- merged_data %>%
+  filter(!is.na(total_minutes_asleep))
+
+# Create the plot with a legend
+plot_sleep_vs_steps <- ggplot(data=plot_data_sleep_vs_steps, aes(x=total_steps, y=total_minutes_asleep)) +
+  geom_point(aes(color="Daily Data Point"), alpha=0.6) + # Map color to a string
+  geom_smooth(aes(color="Trendline"), method="lm", se=FALSE) + # Map color for the line
+  scale_color_manual(name = "Legend", values = c("Daily Data Point" = "#D55E00", "Trendline" = "black")) + # Control legend
+  labs(title="Daily Steps vs. Minutes Asleep",
+       subtitle="More active users tend to sleep more",
+       x="Total Daily Steps",
+       y="Total Minutes Asleep") +
+  theme_minimal()
+
+# Show the plot
+plot_sleep_vs_steps
+
+# Finding 3: Sedentary time is high
+# Create the plot with a legend
+plot_steps_vs_sedentary <- ggplot(data=merged_data, aes(x=total_steps, y=sedentary_minutes)) +
+  geom_point(aes(color="Daily Data Point"), alpha=0.6) + # Map color to a string
+  geom_smooth(aes(color="Trendline"), method="loess", se=FALSE) + # Map color for the line
+  scale_color_manual(name = "Legend", values = c("Daily Data Point" = "#009E73", "Trendline" = "black")) + # Control legend
+  labs(title="Daily Steps vs. Sedentary Minutes",
+       subtitle="Even active users have significant sedentary time",
+       x="Total Daily Steps",
+       y="Sedentary Minutes") +
+  theme_minimal()
+
+# Show the plot
+plot_steps_vs_sedentary
+
+# --- 6. ACT: SAVE YOUR VISUALIZATIONS ---
+# This is a crucial step for your portfolio! We save the plots as PNG files.
+# You can then upload these files to your GitHub repository.
+
+ggsave("chart1_activity_by_hour.png", plot = plot_activity_by_hour, width = 10, height = 6)
+ggsave("chart2_sleep_vs_steps.png", plot = plot_sleep_vs_steps, width = 10, height = 6)
+ggsave("chart3_steps_vs_sedentary.png", plot = plot_steps_vs_sedentary, width = 10, height = 6)
+
+print("Analysis complete! Your charts have been saved as PNG files in your project folder.")
+
