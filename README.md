@@ -64,7 +64,7 @@ Users who take more steps also tend to get more sleep.
 ### Finding 3: Sedentary Time is High
 A large portion of the day is spent sedentary, even for active users. This represents a key opportunity.
 
-![Chart showing sedentary minutes](path/to/your/chart3.png)
+[![Chart showing sedentary minutes](path/to/your/chart3.png)](https://github.com/debuze/bellabeat-case-study/blob/main/chart3_steps_vs_sedentary.png)
 
 ---
 
