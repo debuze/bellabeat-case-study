@@ -59,7 +59,7 @@ This chart shows that activity peaks between 5 PM and 7 PM.
 ### Finding 2: A Strong Link Between Steps and Sleep
 Users who take more steps also tend to get more sleep.
 
-![Chart showing steps vs sleep](path/to/your/chart2.png)
+[![Chart showing steps vs sleep](path/to/your/chart2.png)](https://github.com/debuze/bellabeat-case-study/blob/main/chart2_sleep_vs_steps.png)
 
 ### Finding 3: Sedentary Time is High
 A large portion of the day is spent sedentary, even for active users. This represents a key opportunity.
