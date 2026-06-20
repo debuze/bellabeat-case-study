@@ -54,17 +54,17 @@ Here are some of the key findings from the analysis.
 ### Finding 1: Users are Most Active in the Early Evening
 This chart shows that activity peaks between 5 PM and 7 PM.
 
-[![Chart showing activity by hour](path/to/your/chart1.png)](https://github.com/debuze/bellabeat-case-study/blob/main/chart1_activity_by_hour.png)
+![Chart showing activity by hour](chart1_activity_by_hour.png)
 
 ### Finding 2: A Strong Link Between Steps and Sleep
 Users who take more steps also tend to get more sleep.
 
-[![Chart showing steps vs sleep](path/to/your/chart2.png)](https://github.com/debuze/bellabeat-case-study/blob/main/chart2_sleep_vs_steps.png)
+![Chart showing steps vs sleep](chart2_sleep_vs_steps.png)
 
 ### Finding 3: Sedentary Time is High
 A large portion of the day is spent sedentary, even for active users. This represents a key opportunity.
 
-[![Chart showing sedentary minutes](path/to/your/chart3.png)](https://github.com/debuze/bellabeat-case-study/blob/main/chart3_steps_vs_sedentary.png)
+![Chart showing sedentary minutes](chart3_steps_vs_sedentary.png)
 
 ---
 
